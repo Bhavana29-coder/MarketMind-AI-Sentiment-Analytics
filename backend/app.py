@@ -1,3 +1,5 @@
+from fastapi.responses import FileResponse
+import csv
 from fastapi import FastAPI
 from sentiment import analyze_sentiment
 
@@ -67,3 +69,80 @@ def get_records():
     db.close()
 
     return result
+@app.delete("/records/{record_id}")
+def delete_record(record_id: int):
+
+    db = SessionLocal()
+
+    record = db.query(SentimentRecord).filter(
+        SentimentRecord.id == record_id
+    ).first()
+
+    if record:
+        db.delete(record)
+        db.commit()
+
+    db.close()
+
+    return {"message": "Record deleted"};
+
+@app.put("/records/{record_id}")
+def update_record(record_id: int, data: dict):
+
+    db = SessionLocal()
+
+    record = db.query(SentimentRecord).filter(
+        SentimentRecord.id == record_id
+    ).first()
+
+    if record:
+
+        record.company = data.get(
+            "company",
+            record.company
+        )
+
+        record.industry = data.get(
+            "industry",
+            record.industry
+        )
+
+        db.commit()
+
+    db.close()
+
+    return {"message": "Record updated"}
+@app.get("/export")
+def export_csv():
+
+    db = SessionLocal()
+
+    records = db.query(SentimentRecord).all()
+
+    with open("sentiment_records.csv", "w", newline="") as file:
+
+        writer = csv.writer(file)
+
+        writer.writerow([
+            "Company",
+            "Industry",
+            "Sentiment",
+            "Score"
+        ])
+
+        for record in records:
+
+            writer.writerow([
+                record.company,
+                record.industry,
+                record.sentiment,
+                record.score
+            ])
+
+    db.close()
+
+    return FileResponse(
+        "sentiment_records.csv",
+        media_type="text/csv",
+        filename="sentiment_records.csv"
+    )

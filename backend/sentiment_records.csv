@@ -1,0 +1,5 @@
+Company,Industry,Sentiment,Score
+Tesla,Automobile,Positive,0.43
+tesla,Automobile,Positive,0.43
+Tesla,tech,Positive,0.14
+tesla,finance,Neutral,0.0
