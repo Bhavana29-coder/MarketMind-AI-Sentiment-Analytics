@@ -58,13 +58,14 @@ def get_records():
     result = []
 
     for record in records:
-        result.append({
-            "id": record.id,
-            "company": record.company,
-            "industry": record.industry,
-            "sentiment": record.sentiment,
-            "score": record.score
-        })
+       result.append({
+    "id": record.id,
+    "company": record.company,
+    "industry": record.industry,
+    "sentiment": record.sentiment,
+    "score": record.score,
+    "created_at": str(record.created_at)
+})
 
     db.close()
 

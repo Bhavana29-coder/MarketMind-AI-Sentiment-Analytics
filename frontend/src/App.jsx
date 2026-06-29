@@ -1,3 +1,4 @@
+import "./App.css";
 import { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -12,8 +13,12 @@ import {
   XAxis,
   YAxis,
   CartesianGrid
+ 
 } from "recharts";
-
+import {
+  LineChart,
+  Line,
+} from "recharts";
 function App() {
 
   const [company, setCompany] = useState("");
@@ -27,19 +32,33 @@ function App() {
   const [records, setRecords] = useState([]);
 
   const [editingId, setEditingId] = useState(null);
-
+  const [darkMode, setDarkMode] = useState(true);
   const loadRecords = async () => {
+  try {
     const response = await axios.get(
       "http://127.0.0.1:8000/records"
     );
 
-    setRecords(response.data);
-  };
+    setRecords(
+      Array.isArray(response.data)
+        ? response.data
+        : []
+    );
+  } catch (error) {
+    console.error(error);
+    setRecords([]);
+  }
+};
 
   useEffect(() => {
-    loadRecords();
-  }, []);
 
+  if (darkMode) {
+    document.body.classList.remove("light-mode");
+  } else {
+    document.body.classList.add("light-mode");
+  }
+
+}, [darkMode]);
   const analyzeSentiment = async () => {
 
     const response = await axios.post(
@@ -103,7 +122,34 @@ const exportCSV = () => {
 
 };
   const totalRecords = records.length;
+  const highestScore =
+  records.length > 0
+    ? Math.max(...records.map(r => r.score))
+    : 0;
 
+const mostPositiveCompany =
+  records.length > 0
+    ? records.reduce((a, b) =>
+        a.score > b.score ? a : b
+      ).company
+    : "N/A";
+
+const industryCount = {};
+
+records.forEach(record => {
+  industryCount[record.industry] =
+    (industryCount[record.industry] || 0) + 1;
+});
+
+const mostActiveIndustry =
+  Object.keys(industryCount).length > 0
+    ? Object.keys(industryCount).reduce(
+        (a, b) =>
+          industryCount[a] > industryCount[b]
+            ? a
+            : b
+      )
+    : "N/A";
   const positiveCount = records.filter(
     record => record.sentiment === "Positive"
   ).length;
@@ -127,13 +173,36 @@ const exportCSV = () => {
     company: record.company,
     score: record.score
   }));
+  const trendData = records.map((record) => ({
+  date: record.created_at
+    ? record.created_at.split(" ")[0]
+    : "N/A",
+  score: record.score || 0
+}));
+  const industryData = Object.entries(
 
+  records.reduce((acc, record) => {
+
+    acc[record.industry] =
+      (acc[record.industry] || 0) + 1;
+
+    return acc;
+
+  }, {})
+
+).map(([industry, count]) => ({
+
+  industry,
+  count
+
+}));
   const filteredRecords = records.filter(record => {
 
     const companyMatch =
-      record.company
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase());
+      (record.company || "")
+  .toLowerCase()
+  .includes(searchTerm.toLowerCase());
+        
 
     const industryMatch =
       industryFilter === "" ||
@@ -143,58 +212,96 @@ const exportCSV = () => {
   });
 
   return (
-    <div className="container mt-4">
+    <>
+    <button
+    className="theme-toggle"
+    onClick={() => setDarkMode(!darkMode)}
+  >
+    {darkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
+  </button>
 
-      <h1 className="text-center mb-4">
-        MarketMind Dashboard
-      </h1>
+  <div className="container mt-4">
+{/* <div className={`container mt-4 ${darkMode ? "dark-theme" : "light-theme"}`}> */}
+
+     <div className="text-center mb-5">
+<div className="dashboard-header">
+ 
+  <div className="logo-box">
+  <img
+    src="/logo.png"
+    alt="MarketMind Logo"
+    className="logo-img"
+  />
+</div>
+ <h1 className="dashboard-title">
+MarketMind
+</h1>
+ <h4 className="dashboard-subtitle">
+    AI-Powered Market Sentiment Analytics
+  </h4>
+</div>
+</div> 
 
       {/* Summary Cards */}
+<div className="row g-4 mb-5">
 
-      <div className="row mb-4">
+  <div className="col-md-4">
+    <div className="kpi-card kpi-blue">
+      <h5>Total Records</h5>
+      <h2>{totalRecords}</h2>
+    </div>
+  </div>
 
-        <div className="col-md-4">
-          <div className="card text-center">
-            <div className="card-body">
-              <h5>Total Records</h5>
-              <h2>{totalRecords}</h2>
-            </div>
-          </div>
-        </div>
+  <div className="col-md-4">
+    <div className="kpi-card kpi-green">
+      <h5>Positive News</h5>
+      <h2>{positiveCount}</h2>
+    </div>
+  </div>
 
-        <div className="col-md-4">
-          <div className="card text-center">
-            <div className="card-body">
-              <h5>Positive News</h5>
-              <h2>{positiveCount}</h2>
-            </div>
-          </div>
-        </div>
+  <div className="col-md-4">
+    <div className="kpi-card kpi-red">
+      <h5>Negative News</h5>
+      <h2>{negativeCount}</h2>
+    </div>
+  </div>
 
-        <div className="col-md-4">
-          <div className="card text-center">
-            <div className="card-body">
-              <h5>Negative News</h5>
-              <h2>{negativeCount}</h2>
-            </div>
-          </div>
-        </div>
+  <div className="col-md-4">
+    <div className="kpi-card kpi-purple">
+      <h5>Most Positive Company</h5>
+      <h2>{mostPositiveCompany}</h2>
+    </div>
+  </div>
 
-      </div>
+  <div className="col-md-4">
+    <div className="kpi-card kpi-orange">
+      <h5>Highest Score</h5>
+      <h2>{highestScore.toFixed(2)}</h2>
+    </div>
+  </div>
 
+  <div className="col-md-4">
+    <div className="kpi-card kpi-cyan">
+      <h5>Most Active Industry</h5>
+      <h2>{mostActiveIndustry}</h2>
+    </div>
+  </div>
+
+</div>
+    
       {/* Pie Chart */}
 
-      <div className="mb-5">
-
-        <h2>Sentiment Distribution</h2>
-
-        <PieChart width={400} height={300}>
+    <div className="chart-box pie-chart-container">
+        <h2 className="section-title">
+  Sentiment Distribution
+</h2>
+        <PieChart width={550} height={350}>
 
           <Pie
             data={pieData}
             cx="50%"
             cy="50%"
-            outerRadius={100}
+            outerRadius={120}
             dataKey="value"
             label
           >
@@ -211,9 +318,11 @@ const exportCSV = () => {
 
       {/* Bar Chart */}
 
-      <div className="mb-5">
+      <div className="chart-box text-center">
 
-        <h2>Company Sentiment Scores</h2>
+       <h2 className="section-title">
+       Company Sentiment Scores
+</h2>
 
         <BarChart
           width={900}
@@ -236,65 +345,135 @@ const exportCSV = () => {
         </BarChart>
 
       </div>
+<div className="chart-box">
+
+<h2 className="section-title">
+Sentiment Trend Over Time
+</h2>
+
+<LineChart
+  width={900}
+  height={400}
+  data={trendData}
+>
+    <CartesianGrid strokeDasharray="3 3" />
+
+    <XAxis dataKey="date" />
+
+    <YAxis />
+
+    <Tooltip />
+
+    <Line
+      type="monotone"
+      dataKey="score"
+      stroke="#198754"
+    />
+
+  </LineChart>
+</div >
+ 
+<div className="chart-box">
+
+<h2 className="section-title">
+Industry-wise News Count
+</h2>
+
+<BarChart
+  width={900}
+  height={400}
+  data={industryData}
+>
+
+    <CartesianGrid strokeDasharray="3 3" />
+
+    <XAxis dataKey="industry" />
+
+    <YAxis />
+
+    <Tooltip />
+
+    <Bar
+      dataKey="count"
+      fill="#20c997"
+    />
+
+  </BarChart>
+
+</div>
 
       {/* Form */}
 
-      <input
-        className="form-control mb-3"
-        placeholder="Company Name"
-        value={company}
-        onChange={(e) => setCompany(e.target.value)}
-      />
+<div className="news-form">
 
-      <input
-        className="form-control mb-3"
-        placeholder="Industry"
-        value={industry}
-        onChange={(e) => setIndustry(e.target.value)}
-      />
+ 
+    <h2 className="section-title">
+      Add Market News
+</h2>
 
-      <textarea
-        className="form-control mb-3"
-        rows="4"
-        placeholder="Enter Market News"
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-      />
+    <input
+      type="text"
+      className="form-control mb-3"
+      placeholder="Company Name"
+      value={company}
+      onChange={(e) => setCompany(e.target.value)}
+    />
 
-      {editingId ? (
-        <button
-          className="btn btn-warning mb-4"
-          onClick={updateRecord}
-        >
-          Update Record
-        </button>
-      ) : (
-        <button
-          className="btn btn-success mb-4"
-          onClick={analyzeSentiment}
-        >
-          Analyze Sentiment
-        </button>
-      )}
+    <input
+      type="text"
+      className="form-control mb-3"
+      placeholder="Industry"
+      value={industry}
+      onChange={(e) => setIndustry(e.target.value)}
+    />
+
+    <textarea
+      className="form-control mb-3"
+      rows="5"
+      placeholder="Enter Market News"
+      value={text}
+      onChange={(e) => setText(e.target.value)}
+    />
+
+    {editingId ? (
+      <button
+        className="btn btn-success"
+        onClick={updateRecord}
+      >
+        Update Record
+      </button>
+    ) : (
+      <button
+        className="btn btn-primary"
+        onClick={analyzeSentiment}
+      >
+        Analyze Sentiment
+      </button>
+    )}
+
+  </div>
+
+
 
       {/* Latest Result */}
 
       {result && (
 
-        <div className="mb-4">
+  <div className="alert alert-info mt-3">
 
-          <h3>Latest Result</h3>
+    <h4>Latest Result</h4>
 
-          <p>
-            <strong>Sentiment:</strong> {result.sentiment}
-          </p>
+    <p>
+      <strong>Sentiment:</strong> {result.sentiment}
+    </p>
 
-          <p>
-            <strong>Score:</strong> {result.score}
-          </p>
+    <p>
+      <strong>Score:</strong> {result.score}
+    </p>
 
-        </div>
-      )}
+  </div>
+
+)}
 
       <hr />
 
@@ -348,13 +527,16 @@ const exportCSV = () => {
 </button>
       {/* Table */}
 
-      <h2>Sentiment History</h2>
+      <h2 className="section-title">
+  Sentiment History
+</h2>
 
-      <table className="table table-striped table-bordered mt-3">
+    <table className="table custom-table mt-3">
 
         <thead>
 
           <tr>
+            <th>Date</th>
             <th>Company</th>
             <th>Industry</th>
             <th>Sentiment</th>
@@ -369,7 +551,9 @@ const exportCSV = () => {
           {filteredRecords.map((record) => (
 
             <tr key={record.id}>
-
+              <td>
+  {record.created_at}
+</td>
               <td>{record.company}</td>
 
               <td>{record.industry}</td>
@@ -425,7 +609,10 @@ const exportCSV = () => {
       </table>
 
     </div>
-  );
+</>
+);
 }
 
+
 export default App;
+
