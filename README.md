@@ -62,7 +62,10 @@ MarketMind
 │   ├── package.json
 │   └── vite.config.js
 │
-└── README.md
+|── README.md
+|
+└── screenshots
+
 ```
 
 ---
@@ -179,14 +182,25 @@ Sentiment is calculated using **polarity scores**.
 
 ## 📷 Screenshots
 
-Add screenshots here after uploading.
 
-Example:
+### Dashboard
+![Dashboard](screenshots/dashboard.png)
 
-- Dashboard
-- Sentiment Prediction
-- Charts
-- History Table
+### Sentiment Prediction
+![Prediction](screenshots/prediction.png)
+
+### Analytics
+![Analytics](screenshots/analytics.png)
+
+### Distribution
+![Distribution](screenshots/distribution.png)
+
+### History
+![History](screenshots/history.png)
+
+### Dark Mode
+![Light Mode](screenshots/lightmode.png)
+
 
 ---
 
